@@ -1,0 +1,261 @@
+/**
+  Defines appearance of group playback page
+ */
+
+.group_name {
+  height: 10%;
+  margin-top: 5%;
+  box-sizing: border-box;
+  display: block;
+  color: #000000;
+  position: relative;
+}
+
+.group_box {
+  position:relative;
+  width: 40%;
+  height: 38px;
+  margin: 2% auto;
+  box-sizing: border-box;
+  display: block;
+  color: #000000;
+  background-color: black;
+  z-index: 100;
+}
+
+.group_box p {
+  top: 16%;
+  text-align: center;
+  position: relative;
+  font-style: normal;
+  font-weight: 600;
+  color: white;
+  font-size: large;
+}
+
+.player {
+  position:relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-top: -80px;
+}
+
+.track_details {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 50px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.track_name {
+  font-size: 2rem;
+}
+
+.album_name {
+  font-size: 1rem;
+}
+
+.track_image {
+  margin: 25px;
+  height: 300px;
+  width: 300px;
+  background-size: cover;
+}
+
+.msp_logo {
+  background-color: black;
+  opacity: 0.5;
+  border-radius: 30%;
+  height:40px;
+  width:60px;
+  display: block;
+  align-content: center;
+}
+
+.group_buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+}
+
+.playpause_track, 
+.group_prev,
+.group_next {
+  padding: 15px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.group_prev_disabled,
+.group_next_disabled {
+  padding: 15px;
+  opacity: 0.2;
+  transition: opacity 0.2s;
+}
+
+.playpause_track:hover,
+.group_prev:hover,
+.group_next:hover,
+.shuffled:hover,
+.not_shuffled:hover,
+.repeat:hover,
+.repeat_one:hover,
+.not_repeat:hover {
+  opacity: 1;
+}
+
+.repeat {
+  width: 50px;
+  margin-right: 50px;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+
+.not_repeat {
+  width: 50px;
+  margin-right: 50px;
+  opacity: 0.2;
+  transition: opacity 0.2s;
+}
+
+.shuffled {
+  width: 50px;
+  margin-left: 50px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.not_shuffled {
+  width: 50px;
+  margin-left: 50px;
+  opacity: 0.2;
+  transition: opacity 0.2s;
+}
+
+i.fa-play-circle,
+i.fa-pause-circle,
+i.fa-step-forward,
+i.fa-step-backward,
+i.fa-random,
+img.pointer {
+  cursor: pointer;
+}
+
+i.fa-volume-down,
+i.fa-volume-up {
+  padding: 10px;
+}
+
+.slider_container {
+  width: 75%;
+  max-width: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-top: -20px;
+}
+
+.seek_slider,
+.groupVolumeSlider {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  height: 5px;
+  background: black;
+  opacity: 0.7;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+}
+
+.seek_slider::-webkit-slider-thumb,
+.groupVolumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  background: black;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+}
+
+.seek_slider:hover,
+.groupVolumeSlider:hover {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.groupVolumeSlider {
+  width: 50%;
+}
+
+.seek_slider {
+  width: 60%;
+}
+
+.play_back_metadata {
+  align-items: center;
+}
+
+.group_volume {
+  font-size: small;
+  margin-right: 150px;
+}
+
+.dropdown_menu {
+  position:relative;
+  width: 40%;
+  margin: 0 auto;
+}
+
+.playback_item {
+  margin-top: 10px;
+  display: block;
+  position: relative;
+  width: 50%;
+  height: 10%;
+  left: 25%;
+  background: #d9d9d9;
+  mix-blend-mode: normal;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  opacity : 0.8;
+  cursor:pointer;
+}
+
+.react_select_container .react_select__control {
+  background-color: black;
+  color: white;
+}
+
+.react_select_container .react_select__single-value {
+  color: white;
+}
+
+.react_select_container .react_select__menu {
+  background-color: black;
+  color: white;
+}
+
+.react_select_container .react_select__option {
+  color: white;
+}
+
+.react_select_container .react_select__option--is-focused {
+  background-color: #6F6F6F;
+  color: white;
+}
+
+.react_select_container .react_select__option--is-selected {
+  background-color: #3F3F3F;
+  color: white;
+}

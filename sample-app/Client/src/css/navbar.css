@@ -1,0 +1,37 @@
+/**
+* Defines appearance of navigation bar at the top of the screen
+*/
+
+  .logo_logout {
+    height: 5%;
+    width: 100%;
+    display: table;
+    border: 1px solid #000000;
+  }
+  
+  .logo {
+    float: left;
+    height: 100%;
+    width: 70%;
+  }
+  
+  .logout {
+    cursor:pointer;
+    float: right;
+    height: 80%;
+    width: 25%;
+    margin-top: 2.5%;
+    margin-right: 2.5%;
+  }
+
+  .render_page_small {
+    align-items: center;
+    margin-top:10%;
+    margin-left: 40%;
+  }
+
+  .render_page {
+    align-items: center;
+    margin-top: 400px;
+    margin-left: 350px;
+  }

@@ -1,0 +1,132 @@
+/**
+ * Defines appearance of households and groups selection pages
+ */
+
+body {
+  background-color: linen;
+  transition: background-color 0.5s;
+}
+
+.main_page {
+  box-sizing: border-box;
+  position: absolute;
+  width: 40%;
+  height: 90%;
+  top: 5%;
+  left: 30%;
+  border: 1px solid #000000;
+  filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
+  float: left;
+  bottom: 5%;
+}
+.main_page > * {
+  display: block;
+  width: 100%;
+}
+
+.group_text {
+  text-align: center;
+
+  display: block;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 32px;
+  color: #000000;
+  margin-top: 5%;
+}
+
+.back_button {
+  position: absolute;
+  margin-top: 4%;
+  margin-left: 2%;
+  z-index: 100;
+}
+
+i.fa-chevron-circle-left {
+  cursor: pointer;
+}
+
+.group_text p {
+  top: 42%;
+  text-align: center;
+  position: relative;
+}
+
+.group_det {
+  height: 10%;
+  display: block;
+}
+
+.group_ind {
+  position: absolute;
+  width: 50%;
+  height: 8%;
+  left: 25%;
+  background: #d9d9d9;
+  mix-blend-mode: normal;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  opacity : 0.8;
+  cursor:pointer;
+}
+
+.household_det {
+  width: 50%;
+  left: 25%;
+  min-height: 9%;
+  background: #d9d9d9;
+  position: relative;
+  mix-blend-mode: normal;
+  display: flex;
+  justify-content: center;
+  cursor:pointer;
+  align-content: center;
+  margin-bottom: 3%;
+}
+
+.household_ind {
+  font-size: 20px;
+  opacity : 0.8;
+  align-content: center;
+  align-self: center;
+  position: relative;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.household_player_name {
+  position: relative;
+  width: 50%;
+  height: 1px;
+  left: 25%;
+  display: block;
+  font-size: 12px;
+  opacity : 0.8;
+  cursor:pointer;
+  align-items: flex-end;
+  text-align: center;
+  align-content: center;
+}
+
+.group_ind:hover {
+  opacity: 1;
+}
+
+.selected_group_page {
+  box-sizing: border-box;
+  position: absolute;
+  width: 40%;
+  top: 5%;
+  left: 30%;
+  border: 1px solid #000000;
+  filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
+  float: left;
+  border-bottom-style: none;
+  align-items: center;
+}
+.selected_group_page > * {
+  display: block;
+  width: 100%;
+}
