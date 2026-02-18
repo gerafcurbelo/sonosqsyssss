@@ -1,0 +1,361 @@
+-- Sonos Controller Q-SYS Plugin
+-- Controls Sonos via the Node.js bridge server
+-- Requires the sample-app server running on the same network
+--
+-- Controls exposed:
+--   "Server IP"        (String)  - IP address of the machine running the Node.js server (default: 127.0.0.1)
+--   "Server Port"      (Integer) - Port of the Node.js server (default: 8080)
+--   "Poll Interval"    (Integer) - Seconds between status polls (default: 2)
+--   "Track Name"       (String, output) - Name of the currently playing track
+--   "Artist Name"      (String, output) - Name of the current artist
+--   "Is Playing"       (Boolean, output) - True when Sonos is playing
+--   "Play"             (Trigger) - Sends play command
+--   "Pause"            (Trigger) - Sends pause command
+--   "Toggle Play/Pause"(Trigger) - Toggles play/pause
+
+PluginInfo = {
+  Name = "Sonos~Controller",
+  Version = "1.0.0",
+  BuildVersion = "1.0.0.0",
+  Id = "3f8c1d2a-4b5e-6f7a-8c9d-0e1f2a3b4c5d",
+  Author = "Sonos Q-SYS Integration",
+  Description = "Controls Sonos playback via the Sonos sample-app Node.js bridge server"
+}
+
+function GetColor(props)
+  return { 51, 153, 255 }
+end
+
+function GetPrettyName(props)
+  return "Sonos Controller"
+end
+
+function GetControls(props)
+  return {
+    {
+      Name = "ServerIP",
+      ControlType = "Text",
+      DefaultValue = "127.0.0.1",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "ServerPort",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      DefaultValue = 8080,
+      Min = 1,
+      Max = 65535,
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "PollInterval",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      DefaultValue = 2,
+      Min = 1,
+      Max = 60,
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "TrackName",
+      ControlType = "Text",
+      DefaultValue = "",
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    },
+    {
+      Name = "ArtistName",
+      ControlType = "Text",
+      DefaultValue = "",
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    },
+    {
+      Name = "IsPlaying",
+      ControlType = "Button",
+      ButtonType = "Toggle",
+      DefaultValue = 0,
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    },
+    {
+      Name = "Play",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "Pause",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "Toggle",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "ConnectionStatus",
+      ControlType = "Text",
+      DefaultValue = "Disconnected",
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    }
+  }
+end
+
+function GetControlLayout(props)
+  local layout = {}
+  local graphics = {}
+
+  -- Header
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "SONOS CONTROLLER",
+    Position = { 0, 0 },
+    Size = { 300, 24 },
+    FontSize = 14,
+    HTextAlign = "Center"
+  })
+
+  -- Server settings section
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Server IP",
+    Position = { 5, 30 },
+    Size = { 90, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["ServerIP"] = {
+    PrettyName = "Server IP",
+    Position = { 100, 28 },
+    Size = { 195, 20 }
+  }
+
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Port",
+    Position = { 5, 54 },
+    Size = { 90, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["ServerPort"] = {
+    PrettyName = "Server Port",
+    Position = { 100, 52 },
+    Size = { 80, 20 }
+  }
+
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Poll Interval (s)",
+    Position = { 5, 78 },
+    Size = { 90, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["PollInterval"] = {
+    PrettyName = "Poll Interval",
+    Position = { 100, 76 },
+    Size = { 80, 20 }
+  }
+
+  -- Separator
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "NOW PLAYING",
+    Position = { 0, 106 },
+    Size = { 300, 18 },
+    FontSize = 10,
+    HTextAlign = "Center"
+  })
+
+  -- Track info
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Track",
+    Position = { 5, 128 },
+    Size = { 90, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["TrackName"] = {
+    PrettyName = "Track Name",
+    Position = { 100, 126 },
+    Size = { 195, 20 }
+  }
+
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Artist",
+    Position = { 5, 152 },
+    Size = { 90, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["ArtistName"] = {
+    PrettyName = "Artist Name",
+    Position = { 100, 150 },
+    Size = { 195, 20 }
+  }
+
+  -- Is Playing indicator
+  layout["IsPlaying"] = {
+    PrettyName = "Is Playing",
+    Position = { 100, 174 },
+    Size = { 100, 24 },
+    Legend = "Playing"
+  }
+
+  -- Separator
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "CONTROLS",
+    Position = { 0, 208 },
+    Size = { 300, 18 },
+    FontSize = 10,
+    HTextAlign = "Center"
+  })
+
+  -- Playback controls
+  layout["Play"] = {
+    PrettyName = "Play",
+    Position = { 20, 230 },
+    Size = { 80, 30 },
+    Legend = "Play"
+  }
+  layout["Pause"] = {
+    PrettyName = "Pause",
+    Position = { 110, 230 },
+    Size = { 80, 30 },
+    Legend = "Pause"
+  }
+  layout["Toggle"] = {
+    PrettyName = "Toggle Play/Pause",
+    Position = { 200, 230 },
+    Size = { 80, 30 },
+    Legend = "Toggle"
+  }
+
+  -- Connection status
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Status",
+    Position = { 5, 272 },
+    Size = { 90, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["ConnectionStatus"] = {
+    PrettyName = "Connection Status",
+    Position = { 100, 270 },
+    Size = { 195, 20 }
+  }
+
+  return layout, graphics
+end
+
+-- ─── Runtime Script ─────────────────────────────────────────────────────────────
+
+if Controls then
+
+  local pollTimer = Timer.New()
+
+  -- Build base URL from controls
+  local function getBaseURL()
+    local ip = Controls.ServerIP.String
+    local port = math.floor(Controls.ServerPort.Value)
+    if ip == "" then ip = "127.0.0.1" end
+    return "http://" .. ip .. ":" .. port
+  end
+
+  -- Poll /api/status and update display controls
+  local function pollStatus()
+    local url = getBaseURL() .. "/api/status"
+    HttpClient.Download({
+      Url = url,
+      Headers = { ["Accept"] = "application/json" },
+      Timeout = 3,
+      EventHandler = function(table, code, data, err)
+        if code == 200 then
+          local ok, parsed = pcall(json.decode, data)
+          if ok and parsed then
+            Controls.TrackName.String  = parsed.trackName  or ""
+            Controls.ArtistName.String = parsed.artistName or ""
+            Controls.IsPlaying.Boolean = parsed.isPlaying  or false
+            Controls.ConnectionStatus.String = "Connected"
+          else
+            Controls.ConnectionStatus.String = "Parse error"
+          end
+        else
+          Controls.ConnectionStatus.String = "Error " .. tostring(code or err or "unknown")
+        end
+      end
+    })
+  end
+
+  -- HTTP POST helper for control commands
+  local function sendCommand(path)
+    local url = getBaseURL() .. path
+    HttpClient.Upload({
+      Url = url,
+      Method = "POST",
+      Headers = { ["Content-Type"] = "application/json" },
+      Data = "{}",
+      Timeout = 5,
+      EventHandler = function(table, code, data, err)
+        if code == 200 then
+          print("[Sonos Q-SYS] Command OK: " .. path)
+        else
+          print("[Sonos Q-SYS] Command error " .. tostring(code) .. ": " .. tostring(err or data or ""))
+        end
+      end
+    })
+  end
+
+  -- Button handlers
+  Controls.Play.EventHandler = function()
+    sendCommand("/api/play")
+  end
+
+  Controls.Pause.EventHandler = function()
+    sendCommand("/api/pause")
+  end
+
+  Controls.Toggle.EventHandler = function()
+    sendCommand("/api/toggle")
+  end
+
+  -- Restart poll timer when interval changes
+  Controls.PollInterval.EventHandler = function()
+    pollTimer:Stop()
+    pollTimer:Start(Controls.PollInterval.Value)
+  end
+
+  -- Start polling
+  pollTimer.EventHandler = pollStatus
+  pollTimer:Start(Controls.PollInterval.Value)
+
+  -- Initial poll
+  pollStatus()
+
+end

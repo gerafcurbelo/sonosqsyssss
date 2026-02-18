@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Container } from "reactstrap";
 import {useRecoilState} from "recoil";
 import selectedGroupAtom from "../Recoil/selectedGroupAtom";
+import Authentication from "../Authentication/authentication";
 
 /**
  * Returns a button that when clicked, routes user to the appropriate group playback
@@ -19,6 +20,24 @@ export default function GroupRoutingController(props) {
   const [selectedGroupState, setSelectedGroupState] = useRecoilState(selectedGroupAtom);
 
   /**
+   * Sends the OAuth token and groupId to the server so Q-SYS can control this group.
+   * @param {string} groupId - The selected group ID
+   */
+  const sendConfigToServer = (groupId) => {
+    try {
+      const auth = new Authentication();
+      const token = auth.getAccessToken();
+      fetch("http://localhost:8080/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, groupId })
+      }).catch((err) => console.warn("[Q-SYS Config] Could not send config to server:", err));
+    } catch (err) {
+      console.warn("[Q-SYS Config] Could not read access token:", err);
+    }
+  };
+
+  /**
    * onClick listener of button. Updates groupStatusAtom and navigates to group's path
    */
   const routeChange = () => {
@@ -31,6 +50,9 @@ export default function GroupRoutingController(props) {
       groupName: props.group.name,
       groupGoneFlag: false
     });
+
+    // Send token + groupId to server so Q-SYS endpoints work
+    sendConfigToServer(props.group.id);
 
     // Navigates to new path for current group, sending data for the group ID and household ID along with
     const data = {
