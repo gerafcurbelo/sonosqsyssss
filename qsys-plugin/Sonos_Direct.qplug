@@ -1,0 +1,482 @@
+-- Sonos Direct Controller - Q-SYS Plugin
+-- Communicates directly with Sonos speakers via their local UPnP/SOAP API (port 1400)
+-- NO external server needed. Just the Sonos speaker IP on the same network as Q-SYS.
+--
+-- How it works:
+--   Sonos speakers expose a SOAP API at http://<SONOS_IP>:1400
+--   This plugin polls GetPositionInfo + GetTransportInfo to read track info and play state,
+--   and sends Play/Pause SOAP commands directly to the speaker.
+--
+-- Controls:
+--   "Sonos IP"         (Text input)  - IP address of the Sonos speaker
+--   "Poll Interval"    (Knob)        - Seconds between polls (default: 2)
+--   "Track Name"       (Text output) - Currently playing track
+--   "Artist Name"      (Text output) - Current artist
+--   "Album Name"       (Text output) - Current album
+--   "Is Playing"       (Indicator)   - Lit when playing
+--   "Play"             (Trigger)     - Send play command
+--   "Pause"            (Trigger)     - Send pause command
+--   "Toggle"           (Trigger)     - Toggle play/pause
+--   "Next"             (Trigger)     - Skip to next track
+--   "Previous"         (Trigger)     - Skip to previous track
+--   "Status"           (Text output) - Connection status
+
+PluginInfo = {
+  Name = "Sonos~Direct Controller",
+  Version = "1.0.0",
+  BuildVersion = "1.0.0.0",
+  Id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  Author = "Sonos Q-SYS Integration",
+  Description = "Controls Sonos speakers directly via local UPnP/SOAP API. No external server required."
+}
+
+function GetColor(props)
+  return { 51, 153, 255 }
+end
+
+function GetPrettyName(props)
+  return "Sonos Direct"
+end
+
+function GetControls(props)
+  return {
+    {
+      Name = "SonosIP",
+      ControlType = "Text",
+      DefaultValue = "",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "PollInterval",
+      ControlType = "Knob",
+      ControlUnit = "Integer",
+      DefaultValue = 2,
+      Min = 1,
+      Max = 30,
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "TrackName",
+      ControlType = "Text",
+      DefaultValue = "",
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    },
+    {
+      Name = "ArtistName",
+      ControlType = "Text",
+      DefaultValue = "",
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    },
+    {
+      Name = "AlbumName",
+      ControlType = "Text",
+      DefaultValue = "",
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    },
+    {
+      Name = "IsPlaying",
+      ControlType = "Button",
+      ButtonType = "Toggle",
+      DefaultValue = 0,
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    },
+    {
+      Name = "Play",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "Pause",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "Toggle",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "Next",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "Previous",
+      ControlType = "Button",
+      ButtonType = "Trigger",
+      UserPin = true,
+      PinStyle = "Input",
+      Count = 1
+    },
+    {
+      Name = "Status",
+      ControlType = "Text",
+      DefaultValue = "Disconnected",
+      UserPin = true,
+      PinStyle = "Output",
+      Count = 1
+    }
+  }
+end
+
+function GetControlLayout(props)
+  local layout = {}
+  local graphics = {}
+
+  -- Title
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "SONOS DIRECT CONTROLLER",
+    Position = { 0, 0 },
+    Size = { 320, 26 },
+    FontSize = 14,
+    HTextAlign = "Center"
+  })
+
+  -- Sonos IP
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Sonos IP",
+    Position = { 5, 32 },
+    Size = { 80, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["SonosIP"] = {
+    PrettyName = "Sonos IP",
+    Position = { 90, 30 },
+    Size = { 220, 20 }
+  }
+
+  -- Poll Interval
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Poll (s)",
+    Position = { 5, 56 },
+    Size = { 80, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["PollInterval"] = {
+    PrettyName = "Poll Interval",
+    Position = { 90, 54 },
+    Size = { 60, 20 }
+  }
+
+  -- Now Playing section
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "NOW PLAYING",
+    Position = { 0, 84 },
+    Size = { 320, 18 },
+    FontSize = 10,
+    HTextAlign = "Center"
+  })
+
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Track",
+    Position = { 5, 108 },
+    Size = { 80, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["TrackName"] = {
+    PrettyName = "Track Name",
+    Position = { 90, 106 },
+    Size = { 220, 20 }
+  }
+
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Artist",
+    Position = { 5, 132 },
+    Size = { 80, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["ArtistName"] = {
+    PrettyName = "Artist Name",
+    Position = { 90, 130 },
+    Size = { 220, 20 }
+  }
+
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Album",
+    Position = { 5, 156 },
+    Size = { 80, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["AlbumName"] = {
+    PrettyName = "Album Name",
+    Position = { 90, 154 },
+    Size = { 220, 20 }
+  }
+
+  layout["IsPlaying"] = {
+    PrettyName = "Is Playing",
+    Position = { 90, 178 },
+    Size = { 100, 24 },
+    Legend = "Playing"
+  }
+
+  -- Controls section
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "CONTROLS",
+    Position = { 0, 212 },
+    Size = { 320, 18 },
+    FontSize = 10,
+    HTextAlign = "Center"
+  })
+
+  layout["Previous"] = {
+    PrettyName = "Previous",
+    Position = { 10, 236 },
+    Size = { 55, 30 },
+    Legend = "Prev"
+  }
+  layout["Play"] = {
+    PrettyName = "Play",
+    Position = { 70, 236 },
+    Size = { 55, 30 },
+    Legend = "Play"
+  }
+  layout["Pause"] = {
+    PrettyName = "Pause",
+    Position = { 130, 236 },
+    Size = { 55, 30 },
+    Legend = "Pause"
+  }
+  layout["Toggle"] = {
+    PrettyName = "Toggle Play/Pause",
+    Position = { 190, 236 },
+    Size = { 55, 30 },
+    Legend = "Toggle"
+  }
+  layout["Next"] = {
+    PrettyName = "Next",
+    Position = { 250, 236 },
+    Size = { 55, 30 },
+    Legend = "Next"
+  }
+
+  -- Status
+  table.insert(graphics, {
+    Type = "Label",
+    Text = "Status",
+    Position = { 5, 278 },
+    Size = { 80, 16 },
+    FontSize = 10,
+    HTextAlign = "Right"
+  })
+  layout["Status"] = {
+    PrettyName = "Status",
+    Position = { 90, 276 },
+    Size = { 220, 20 }
+  }
+
+  return layout, graphics
+end
+
+-- ─── Runtime ────────────────────────────────────────────────────────────────────
+
+if Controls then
+
+  -- ── SOAP Templates ──────────────────────────────────────────────────────────
+
+  local SOAP_ENVELOPE_OPEN  = '<?xml version="1.0" encoding="utf-8"?>'
+    .. '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"'
+    .. ' s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
+    .. '<s:Body>'
+
+  local SOAP_ENVELOPE_CLOSE = '</s:Body></s:Envelope>'
+
+  local AVT_NS = "urn:schemas-upnp-org:service:AVTransport:1"
+  local AVT_PATH = "/MediaRenderer/AVTransport/Control"
+
+  --- Build a complete SOAP body for AVTransport
+  local function soapBody(action, innerXml)
+    return SOAP_ENVELOPE_OPEN
+      .. '<u:' .. action .. ' xmlns:u="' .. AVT_NS .. '">'
+      .. '<InstanceID>0</InstanceID>'
+      .. (innerXml or '')
+      .. '</u:' .. action .. '>'
+      .. SOAP_ENVELOPE_CLOSE
+  end
+
+  --- Return the full URL for the Sonos AVTransport endpoint
+  local function avtUrl()
+    local ip = Controls.SonosIP.String
+    if ip == "" then return nil end
+    return "http://" .. ip .. ":1400" .. AVT_PATH
+  end
+
+  -- ── XML Helpers ─────────────────────────────────────────────────────────────
+
+  --- Unescape HTML entities commonly found in DIDL-Lite metadata
+  local function htmlUnescape(s)
+    s = s:gsub("&lt;",   "<")
+    s = s:gsub("&gt;",   ">")
+    s = s:gsub("&amp;",  "&")
+    s = s:gsub("&quot;", '"')
+    s = s:gsub("&apos;", "'")
+    return s
+  end
+
+  --- Extract the text content of an XML tag (first occurrence)
+  local function xmlTag(xml, tag)
+    local pattern = "<" .. tag .. "[^>]*>(.-)</" .. tag .. ">"
+    return xml:match(pattern)
+  end
+
+  -- ── Track state ─────────────────────────────────────────────────────────────
+
+  local currentTransportState = "UNKNOWN"
+
+  -- ── SOAP Request Helper ─────────────────────────────────────────────────────
+
+  local function soapRequest(action, body, callback)
+    local url = avtUrl()
+    if not url then
+      Controls.Status.String = "No Sonos IP"
+      return
+    end
+
+    HttpClient.Upload({
+      Url = url,
+      Method = "POST",
+      Headers = {
+        ["Content-Type"] = 'text/xml; charset="utf-8"',
+        ["SOAPAction"]   = '"' .. AVT_NS .. "#" .. action .. '"'
+      },
+      Data = body,
+      Timeout = 5,
+      EventHandler = function(tbl, code, data, err, headers)
+        if code == 200 and callback then
+          callback(data)
+        elseif code ~= 200 then
+          Controls.Status.String = "Error " .. tostring(code or err or "")
+        end
+      end
+    })
+  end
+
+  -- ── Poll: GetPositionInfo (track name, artist, album) ───────────────────────
+
+  local function pollTrackInfo()
+    soapRequest("GetPositionInfo", soapBody("GetPositionInfo"), function(data)
+      -- TrackMetaData contains HTML-escaped DIDL-Lite XML
+      local metaRaw = xmlTag(data, "TrackMetaData")
+      if metaRaw and metaRaw ~= "" and metaRaw ~= "NOT_IMPLEMENTED" then
+        local meta = htmlUnescape(metaRaw)
+        Controls.TrackName.String  = xmlTag(meta, "dc:title")   or ""
+        Controls.ArtistName.String = xmlTag(meta, "dc:creator") or ""
+        Controls.AlbumName.String  = xmlTag(meta, "upnp:album") or ""
+      else
+        Controls.TrackName.String  = ""
+        Controls.ArtistName.String = ""
+        Controls.AlbumName.String  = ""
+      end
+    end)
+  end
+
+  -- ── Poll: GetTransportInfo (play/pause/stop state) ──────────────────────────
+
+  local function pollTransportState()
+    soapRequest("GetTransportInfo", soapBody("GetTransportInfo"), function(data)
+      local state = xmlTag(data, "CurrentTransportState") or "UNKNOWN"
+      currentTransportState = state
+      Controls.IsPlaying.Boolean = (state == "PLAYING" or state == "TRANSITIONING")
+      Controls.Status.String = "Connected - " .. state
+    end)
+  end
+
+  -- ── Control Commands ────────────────────────────────────────────────────────
+
+  Controls.Play.EventHandler = function()
+    soapRequest("Play", soapBody("Play", "<Speed>1</Speed>"), function()
+      Controls.IsPlaying.Boolean = true
+      Controls.Status.String = "Connected - PLAYING"
+    end)
+  end
+
+  Controls.Pause.EventHandler = function()
+    soapRequest("Pause", soapBody("Pause"), function()
+      Controls.IsPlaying.Boolean = false
+      Controls.Status.String = "Connected - PAUSED_PLAYBACK"
+    end)
+  end
+
+  Controls.Toggle.EventHandler = function()
+    if currentTransportState == "PLAYING" then
+      Controls.Pause.EventHandler()
+    else
+      Controls.Play.EventHandler()
+    end
+  end
+
+  Controls.Next.EventHandler = function()
+    soapRequest("Next", soapBody("Next"), nil)
+  end
+
+  Controls.Previous.EventHandler = function()
+    soapRequest("Previous", soapBody("Previous"), nil)
+  end
+
+  -- ── Polling Timer ───────────────────────────────────────────────────────────
+
+  local pollTimer = Timer.New()
+
+  pollTimer.EventHandler = function()
+    pollTrackInfo()
+    pollTransportState()
+  end
+
+  Controls.PollInterval.EventHandler = function()
+    pollTimer:Stop()
+    pollTimer:Start(Controls.PollInterval.Value)
+  end
+
+  Controls.SonosIP.EventHandler = function()
+    -- Re-poll immediately when IP changes
+    if Controls.SonosIP.String ~= "" then
+      pollTrackInfo()
+      pollTransportState()
+    end
+  end
+
+  -- Start polling
+  pollTimer:Start(Controls.PollInterval.Value)
+  if Controls.SonosIP.String ~= "" then
+    pollTrackInfo()
+    pollTransportState()
+  end
+
+end
